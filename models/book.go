@@ -1,7 +1,6 @@
 package models
 
 import (
-	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
 
@@ -10,48 +9,44 @@ type Book struct {
 	Name        string `json:"name"`
 	Author      string `json:"author"`
 	Description string `json:"description"`
+	PublisherID uint
+	Publisher   Publisher
+	Authors     []Author `gorm:"many2many:author_books;"`
 }
 
-// getBooks retrieves all books
-func GetBooks(db *gorm.DB, c *fiber.Ctx) error {
-	var books []Book
-	db.Find(&books)
-	return c.JSON(books)
+func CreateBookWithAuthor(db *gorm.DB, book *Book, authorIDs []uint) error {
+	if err := db.Create(book).Error; err != nil {
+		return err
+	}
+
+	return nil
 }
 
-// getBook retrieves a book by id
-func GetBook(db *gorm.DB, c *fiber.Ctx) error {
-	id := c.Params("id")
+func GetBookWithPublisher(db *gorm.DB, bookID uint) (*Book, error) {
 	var book Book
-	db.First(&book, id)
-	return c.JSON(book)
-}
-
-// createBook creates a new book
-func CreateBook(db *gorm.DB, c *fiber.Ctx) error {
-	book := new(Book)
-	if err := c.BodyParser(book); err != nil {
-		return err
+	result := db.Preload("Publisher").First(&book, bookID)
+	if result.Error != nil {
+		return nil, result.Error
 	}
-	db.Create(&book)
-	return c.JSON(book)
+	return &book, nil
 }
 
-// updateBook updates a book by id
-func UpdateBook(db *gorm.DB, c *fiber.Ctx) error {
-	id := c.Params("id")
-	book := new(Book)
-	db.First(&book, id)
-	if err := c.BodyParser(book); err != nil {
-		return err
+func GetBookWithAuthors(db *gorm.DB, bookID uint) (*Book, error) {
+	var book Book
+	result := db.Preload("Authors").First(&book, bookID)
+	if result.Error != nil {
+		return nil, result.Error
 	}
-	db.Save(&book)
-	return c.JSON(book)
+	return &book, nil
 }
 
-// deleteBook deletes a book by id
-func DeleteBook(db *gorm.DB, c *fiber.Ctx) error {
-	id := c.Params("id")
-	db.Delete(&Book{}, id)
-	return c.SendString("Book successfully deleted")
+func ListBooksOfAuthor(db *gorm.DB, authorID uint) ([]Book, error) {
+	var books []Book
+	result := db.Joins("JOIN author_books on author_books.book_id = books.id").
+		Where("author_books.author_id = ?", authorID).
+		Find(&books)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return books, nil
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"backend/data"
 	"backend/middleware"
 	"backend/models"
 	"fmt"
@@ -47,7 +48,15 @@ func main() {
 	}
 
 	// Migrate the schema
-	db.AutoMigrate(&models.Book{}, &models.User{})
+	db.AutoMigrate(
+		&models.User{},
+		&models.Book{},
+		&models.Publisher{},
+		&models.Author{},
+		&models.AuthorBook{},
+	)
+
+	data.CreateData(db)
 
 	// Setup Fiber
 	app := fiber.New()
@@ -94,21 +103,21 @@ func main() {
 	app.Use("/books", middleware.AuthMiddleware)
 
 	// CRUD routes
-	app.Get("/books", func(c *fiber.Ctx) error {
-		return models.GetBooks(db, c)
-	})
-	app.Get("/books/:id", func(c *fiber.Ctx) error {
-		return models.GetBook(db, c)
-	})
-	app.Post("/books", func(c *fiber.Ctx) error {
-		return models.CreateBook(db, c)
-	})
-	app.Put("/books/:id", func(c *fiber.Ctx) error {
-		return models.UpdateBook(db, c)
-	})
-	app.Delete("/books/:id", func(c *fiber.Ctx) error {
-		return models.DeleteBook(db, c)
-	})
+	// app.Get("/books", func(c *fiber.Ctx) error {
+	// 	return models.GetBooks(db, c)
+	// })
+	// app.Get("/books/:id", func(c *fiber.Ctx) error {
+	// 	return models.GetBook(db, c)
+	// })
+	// app.Post("/books", func(c *fiber.Ctx) error {
+	// 	return models.CreateBook(db, c)
+	// })
+	// app.Put("/books/:id", func(c *fiber.Ctx) error {
+	// 	return models.UpdateBook(db, c)
+	// })
+	// app.Delete("/books/:id", func(c *fiber.Ctx) error {
+	// 	return models.DeleteBook(db, c)
+	// })
 
 	// Start server
 	log.Fatal(app.Listen(":8000"))
